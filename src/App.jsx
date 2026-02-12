@@ -56,72 +56,339 @@ const DEF_XP={addition:0,doubles:0,subtraction:0,multiplication:0,wordProblems:0
 // ============================================
 // PROBLEM GENERATORS
 // ============================================
-function genProblem(skill,level){
-  let a,b,answer,display,hint;
-  switch(skill){
-    case"addition":{const R=[[1,5],[1,9],[2,12],[5,18],[5,25],[10,50],[20,80],[50,200]];const[mn,mx]=R[Math.min(level,R.length-1)];a=Math.floor(Math.random()*(mx-mn+1))+mn;b=Math.floor(Math.random()*(mx-mn+1))+mn;answer=a+b;display=`${a} + ${b} = ?`;hint=level<=1?`🧚 Start at ${a}, count up ${b}!`:level<=3?`🦉 ${a}+${Math.floor(b/2)}=${a+Math.floor(b/2)}, +${b-Math.floor(b/2)}!`:`🪄 Split: ${a}+${Math.floor(b/10)*10}=${a+Math.floor(b/10)*10}, +${b%10}=?`;break;}
-    case"doubles":{
-      if(level<=0){a=Math.floor(Math.random()*5)+1;b=a;answer=a+b;display=`${a} + ${a} = ?`;hint=`🪞 Double ${a}! Count ${a} twice: ${a}...then ${a} more!`;}
-      else if(level===1){a=Math.floor(Math.random()*10)+1;b=a;answer=a+b;display=`${a} + ${a} = ?`;hint=`🪞 Double ${a}! Think: what's ${a} two times?`;}
-      else if(level===2){a=Math.floor(Math.random()*12)+1;b=a;answer=a+b;display=`${a} + ${a} = ?`;hint=`🪞 Double ${a}! If you know ${a}×2, that's the same!`;}
-      else if(level===3){a=Math.floor(Math.random()*10)+2;b=a+1;if(Math.random()>.5)[a,b]=[b,a];answer=a+b;const sm=Math.min(a,b);display=`${a} + ${b} = ?`;hint=`🪞 Near-double! Double ${sm} = ${sm*2}, then add 1 more = ${sm*2+1}!`;}
-      else if(level===4){a=(Math.floor(Math.random()*8)+2)*5;b=a;answer=a+b;display=`${a} + ${a} = ?`;hint=`🪞 Big double! ${a}×2 = ? Think: ${Math.floor(a/10)} tens doubled = ${Math.floor(a/10)*2} tens!`;}
-      else{a=Math.floor(Math.random()*15)+5;b=a+Math.floor(Math.random()*3);if(Math.random()>.5)[a,b]=[b,a];answer=a+b;const sm=Math.min(a,b);const diff=Math.abs(a-b);display=`${a} + ${b} = ?`;hint=a===b?`🪞 Double ${a} = ${a*2}!`:`🪞 Double ${sm} = ${sm*2}, then +${diff} = ${sm*2+diff}!`;}
+
+// Helper: show counting up from a number
+function countUp(from, steps) {
+  const nums = [];
+  for (let i = 1; i <= Math.min(steps, 6); i++) nums.push(from + i);
+  return nums.join(", ") + (steps > 6 ? "..." : "");
+}
+// Helper: show counting down from a number
+function countDown(from, steps) {
+  const nums = [];
+  for (let i = 1; i <= Math.min(steps, 6); i++) nums.push(from - i);
+  return nums.join(", ") + (steps > 6 ? "..." : "");
+}
+
+function genProblem(skill, level) {
+  let a, b, answer, display, hint;
+
+  switch (skill) {
+
+    case "addition": {
+      const R = [[1,5],[1,9],[2,12],[5,18],[5,25],[10,50],[20,80],[50,200]];
+      const [mn,mx] = R[Math.min(level, R.length-1)];
+      a = Math.floor(Math.random()*(mx-mn+1))+mn;
+      b = Math.floor(Math.random()*(mx-mn+1))+mn;
+      answer = a + b;
+      display = `${a} + ${b} = ?`;
+      // ALWAYS count from the bigger number
+      const big = Math.max(a,b), sm = Math.min(a,b);
+      if (level <= 1) {
+        hint = `🧚 Put ${big} in your head, then count up ${sm} more on your fingers:\n${big}... ${countUp(big, sm)}`;
+      } else if (level <= 3) {
+        // Break the small number into friendly pieces
+        const half = Math.floor(sm/2);
+        hint = `🦉 Start with ${big}. Add ${half} first → ${big+half}. Then add ${sm-half} more → ${answer}!`;
+      } else {
+        // For big numbers, add tens then ones
+        const tens = Math.floor(sm/10)*10;
+        const ones = sm % 10;
+        if (tens > 0) {
+          hint = `🪄 Add the tens first! ${big} + ${tens} = ${big+tens}. Then add ${ones} more = ${answer}!`;
+        } else {
+          hint = `🪄 Put ${big} in your head, count up ${sm}: ${big}... ${countUp(big, sm)}`;
+        }
+      }
       break;
     }
-    case"subtraction":{const R=[[1,5],[1,9],[3,15],[5,20],[8,30],[10,50],[20,80],[50,200]];const[mn,mx]=R[Math.min(level,R.length-1)];a=Math.floor(Math.random()*(mx-mn+1))+mn;b=Math.floor(Math.random()*Math.min(a,mx))+1;if(b>a)[a,b]=[b,a];answer=a-b;display=`${a} − ${b} = ?`;hint=level<=1?`🧚 Start at ${a}, count back ${b}!`:level<=3?`🦉 What + ${b} = ${a}?`:`🪄 ${a}−${Math.floor(b/2)}=${a-Math.floor(b/2)}, −${b-Math.floor(b/2)}!`;break;}
-    case"multiplication":{const mM=[2,3,5,5,8,10][Math.min(level,5)];a=Math.floor(Math.random()*mM)+1;b=Math.floor(Math.random()*mM)+1;if(level<=1){a=Math.min(a,3);b=Math.min(b,5);}answer=a*b;display=`${a} × ${b} = ?`;hint=`🧪 ${a} groups of ${b}: ${Array.from({length:Math.min(a,5)},()=>b).join("+")}${a>5?"+...":""}=?`;break;}
-    case"wordProblems":{const fc=FAIRY_CREATURES[Math.floor(Math.random()*FAIRY_CREATURES.length)];const T=[()=>{const n1=Math.floor(Math.random()*5)+2,n2=Math.floor(Math.random()*5)+1;return{display:`${fc} A fairy has ${n1} crystals and finds ${n2} more. How many now?`,answer:n1+n2,hint:`🧚 ${n1}+${n2}=?`};},()=>{const n1=Math.floor(Math.random()*6)+4,n2=Math.floor(Math.random()*(n1-1))+1;return{display:`${fc} Dragon had ${n1} coins, gave ${n2} away. How many left?`,answer:n1-n2,hint:`🐉 ${n1}−${n2}=?`};},()=>{const n1=Math.floor(Math.random()*8)+5,n2=Math.floor(Math.random()*8)+3;return{display:`${fc} Wizard picked ${n1} mushrooms, then ${n2} more. Total?`,answer:n1+n2,hint:`🍄 ${n1}+${n2}=?`};},()=>{const n1=Math.floor(Math.random()*10)+8,n2=Math.floor(Math.random()*5)+2,n3=Math.floor(Math.random()*3)+1;return{display:`${fc} Unicorn had ${n1} flowers. Gave ${n2} to bunny, ${n3} to owl. How many left?`,answer:n1-n2-n3,hint:`🦄 ${n1}−${n2}=${n1-n2}, −${n3}=?`};},()=>{const n1=Math.floor(Math.random()*4)+2,n2=Math.floor(Math.random()*5)+2;return{display:`${fc} Queen has ${n1} chests with ${n2} gems each. How many?`,answer:n1*n2,hint:`👑 ${n1}×${n2}=?`};},()=>{const n1=Math.floor(Math.random()*5)+3,n2=Math.floor(Math.random()*5)+3,n3=Math.floor(Math.random()*4)+2;return{display:`${fc} Bakery has ${n1} cupcakes, ${n2} cookies, ${n3} cakes. How many?`,answer:n1+n2+n3,hint:`🧁 ${n1}+${n2}=${n1+n2}, +${n3}=?`};}];const ti=T[Math.min(Math.floor(Math.random()*Math.min(level+2,T.length)),T.length-1)]();answer=ti.answer;display=ti.display;hint=ti.hint;break;}
+
+    case "doubles": {
+      if (level <= 0) {
+        // Tiny doubles 1-5, very concrete
+        a = Math.floor(Math.random()*5)+1;
+        answer = a + a;
+        display = `${a} + ${a} = ?`;
+        hint = `🪞 Hold up ${a} fingers on EACH hand! Now count ALL your fingers: ${countUp(0, answer).split(", ").slice(0, answer).join(", ")}. That's ${answer}!`;
+      } else if (level === 1) {
+        // Doubles 1-10
+        a = Math.floor(Math.random()*10)+1;
+        answer = a + a;
+        display = `${a} + ${a} = ?`;
+        hint = `🪞 Think of two groups of ${a}. Put ${a} in your head, count up ${a} more: ${a}... ${countUp(a, Math.min(a,6))}`;
+      } else if (level === 2) {
+        // Doubles up to 12
+        a = Math.floor(Math.random()*12)+1;
+        answer = a + a;
+        display = `${a} + ${a} = ?`;
+        hint = `🪞 Two ${a}s! Skip-count by ${a}: ${a}... ${a*2}! Or put ${a} in your head and count ${a} more.`;
+      } else if (level === 3) {
+        // Near-doubles (one apart)
+        a = Math.floor(Math.random()*10)+2;
+        b = a + 1;
+        if (Math.random() > .5) [a,b] = [b,a];
+        answer = a + b;
+        const sm = Math.min(a,b);
+        display = `${a} + ${b} = ?`;
+        hint = `🪞 These are almost the same number! Double the smaller one: ${sm} + ${sm} = ${sm*2}. Then add 1 more because ${Math.max(a,b)} is 1 bigger: ${sm*2} + 1 = ${sm*2+1}!`;
+      } else if (level === 4) {
+        // Big round doubles (10, 15, 20, etc.)
+        a = (Math.floor(Math.random()*8)+2) * 5;
+        answer = a + a;
+        display = `${a} + ${a} = ?`;
+        hint = `🪞 Think in tens! ${a} has ${Math.floor(a/10)} tens. Double the tens: ${Math.floor(a/10)} + ${Math.floor(a/10)} = ${Math.floor(a/10)*2} tens = ${Math.floor(a/10)*20}. ${a%10>0?`Then double the ${a%10}: ${a%10}+${a%10}=${a%10*2}. Total = ${answer}!`:`That's ${answer}!`}`;
+      } else {
+        // Mixed bigger doubles and near-doubles
+        a = Math.floor(Math.random()*15)+5;
+        b = a + Math.floor(Math.random()*3);
+        if (Math.random() > .5) [a,b] = [b,a];
+        answer = a + b;
+        const sm = Math.min(a,b), diff = Math.abs(a-b);
+        display = `${a} + ${b} = ?`;
+        hint = a===b ? `🪞 Double ${a}! ${a} + ${a} = ${a*2}!` : `🪞 Almost a double! ${sm} + ${sm} = ${sm*2}. Then add ${diff} more: ${sm*2} + ${diff} = ${sm*2+diff}!`;
+      }
+      break;
+    }
+
+    case "subtraction": {
+      const R = [[1,5],[1,9],[3,15],[5,20],[8,30],[10,50],[20,80],[50,200]];
+      const [mn,mx] = R[Math.min(level, R.length-1)];
+      a = Math.floor(Math.random()*(mx-mn+1))+mn;
+      b = Math.floor(Math.random()*Math.min(a,mx))+1;
+      if (b > a) [a,b] = [b,a];
+      answer = a - b;
+      display = `${a} − ${b} = ?`;
+      if (level <= 1) {
+        // Show actual countdown
+        hint = `🔮 Start at ${a} and count backwards ${b} times on your fingers:\n${a}... ${countDown(a, b)}`;
+      } else if (level <= 3) {
+        // Think-addition strategy
+        hint = `🔮 Think: what do I add to ${b} to get to ${a}? Start at ${b} and count up: ${b}... ${countUp(b, Math.min(answer, 6))}. That's ${answer} jumps!`;
+      } else {
+        // Break apart for bigger numbers
+        const tens = Math.floor(b/10)*10;
+        const ones = b % 10;
+        if (tens > 0) {
+          hint = `🔮 Subtract the tens first! ${a} − ${tens} = ${a-tens}. Then take away ${ones} more: ${a-tens} − ${ones} = ${answer}!`;
+        } else {
+          hint = `🔮 Start at ${a}, count back ${b}: ${a}... ${countDown(a, b)}`;
+        }
+      }
+      break;
+    }
+
+    case "multiplication": {
+      const mM = [2,3,5,5,8,10][Math.min(level,5)];
+      a = Math.floor(Math.random()*mM)+1;
+      b = Math.floor(Math.random()*mM)+1;
+      if (level <= 1) { a = Math.min(a,3); b = Math.min(b,5); }
+      answer = a * b;
+      display = `${a} × ${b} = ?`;
+      // Show as repeated addition with running total
+      const groups = Array.from({length: Math.min(a, 5)}, () => b);
+      const running = [];
+      let sum = 0;
+      for (const g of groups) { sum += g; running.push(sum); }
+      hint = `🧪 ${a} × ${b} means "${a} groups of ${b}." Count them:\n${groups.join(" + ")}${a>5?" + ...":""}\n= ${running.join(", ")}${a>5?"...":""} → ${answer}!`;
+      break;
+    }
+
+    case "wordProblems": {
+      const fc = FAIRY_CREATURES[Math.floor(Math.random() * FAIRY_CREATURES.length)];
+      const T = [
+        () => {
+          const n1 = Math.floor(Math.random()*5)+2, n2 = Math.floor(Math.random()*5)+1;
+          const big = Math.max(n1,n2), sm = Math.min(n1,n2);
+          return {
+            display: `${fc} A fairy has ${n1} crystals and finds ${n2} more. How many now?`,
+            answer: n1 + n2,
+            hint: `🧚 She found MORE crystals, so we ADD them together!\nPut ${big} in your head, count up ${sm}: ${big}... ${countUp(big, sm)}`
+          };
+        },
+        () => {
+          const n1 = Math.floor(Math.random()*6)+4, n2 = Math.floor(Math.random()*(n1-1))+1;
+          return {
+            display: `${fc} The dragon had ${n1} coins and gave ${n2} away. How many left?`,
+            answer: n1 - n2,
+            hint: `🐉 He GAVE AWAY coins, so he has LESS now. We subtract!\nStart at ${n1}, count back ${n2}: ${n1}... ${countDown(n1, n2)}`
+          };
+        },
+        () => {
+          const n1 = Math.floor(Math.random()*8)+5, n2 = Math.floor(Math.random()*8)+3;
+          const big = Math.max(n1,n2), sm = Math.min(n1,n2);
+          return {
+            display: `${fc} The wizard picked ${n1} mushrooms, then found ${n2} more. How many total?`,
+            answer: n1 + n2,
+            hint: `🍄 He found MORE, so we ADD!\nPut ${big} in your head, count up ${sm}: ${big}... ${countUp(big, sm)}`
+          };
+        },
+        () => {
+          const n1 = Math.floor(Math.random()*8)+8, n2 = Math.floor(Math.random()*4)+2, n3 = Math.floor(Math.random()*3)+1;
+          return {
+            display: `${fc} A unicorn had ${n1} flowers. She gave ${n2} to bunny and ${n3} to owl. How many does she have left?`,
+            answer: n1 - n2 - n3,
+            hint: `🦄 She's giving flowers AWAY — twice! Subtract step by step:\nFirst: ${n1} − ${n2} = ${n1-n2} (gave to bunny)\nThen: ${n1-n2} − ${n3} = ${n1-n2-n3} (gave to owl)`
+          };
+        },
+        () => {
+          const n1 = Math.floor(Math.random()*4)+2, n2 = Math.floor(Math.random()*5)+2;
+          const groups = Array.from({length: n1}, () => n2);
+          return {
+            display: `${fc} The queen has ${n1} treasure chests. Each chest has ${n2} gems inside. How many gems total?`,
+            answer: n1 * n2,
+            hint: `👑 EQUAL groups! ${n1} chests, ${n2} gems in each one.\nCount them all: ${groups.join(" + ")} = ${n1*n2}`
+          };
+        },
+        () => {
+          const n1 = Math.floor(Math.random()*5)+3, n2 = Math.floor(Math.random()*5)+3, n3 = Math.floor(Math.random()*4)+2;
+          const big = Math.max(n1,n2,n3), mid = [n1,n2,n3].sort((x,y)=>y-x)[1], sm = Math.min(n1,n2,n3);
+          return {
+            display: `${fc} The bakery made ${n1} cupcakes, ${n2} cookies, and ${n3} cakes. How many treats altogether?`,
+            answer: n1 + n2 + n3,
+            hint: `🧁 We're putting them ALL together, so ADD!\nStart big: ${big} + ${mid} = ${big+mid}\nThen + ${sm} = ${big+mid+sm}`
+          };
+        }
+      ];
+      const idx = Math.min(Math.floor(Math.random()*Math.min(level+2, T.length)), T.length-1);
+      const ti = T[idx]();
+      answer = ti.answer; display = ti.display; hint = ti.hint;
+      break;
+    }
+
     default: a=1;b=1;answer=2;display="1+1=?";hint="🧚 Count!";
   }
-  const wrong=new Set();let s=0;while(wrong.size<3&&s<30){s++;const off=Math.floor(Math.random()*5)+1+Math.floor(Math.random()*3);const w=Math.random()>.5?answer+off:Math.max(0,answer-off);if(w!==answer&&w>=0)wrong.add(w);}
-  while(wrong.size<3)wrong.add(answer+wrong.size+7);
-  return{display,answer,hint,choices:[...wrong,answer].sort(()=>Math.random()-.5),skill,type:"math"};
+
+  const wrong = new Set();
+  let s = 0;
+  while (wrong.size < 3 && s < 30) {
+    s++;
+    const off = Math.floor(Math.random()*5)+1+Math.floor(Math.random()*3);
+    const w = Math.random() > .5 ? answer+off : Math.max(0, answer-off);
+    if (w !== answer && w >= 0) wrong.add(w);
+  }
+  while (wrong.size < 3) wrong.add(answer + wrong.size + 7);
+  return { display, answer, hint, choices: [...wrong, answer].sort(() => Math.random()-.5), skill, type: "math" };
 }
 
 function fmtTime(h,m){return `${h}:${m.toString().padStart(2,'0')}`;}
 
-function genTimeProblem(level){
-  let hours,minutes,answer,hint,wrongSet=new Set();
-  if(level<=0){
-    hours=Math.floor(Math.random()*12)+1;minutes=0;
-    answer=fmtTime(hours,0);
-    hint="🕐 The SHORT hand (small one) points to the hour number. The LONG hand points straight up at 12 — that means o'clock!";
-    while(wrongSet.size<3){let h=Math.floor(Math.random()*12)+1;if(h!==hours)wrongSet.add(fmtTime(h,0));}
-  } else if(level===1){
-    hours=Math.floor(Math.random()*12)+1;minutes=30;
-    answer=fmtTime(hours,30);
-    hint="🕐 When the LONG hand points straight DOWN at 6, it means ':30' or 'half past'. The SHORT hand tells you the hour — it'll be between two numbers at half past!";
-    wrongSet.add(fmtTime(hours,0));
-    while(wrongSet.size<3){let h=Math.floor(Math.random()*12)+1;if(fmtTime(h,30)!==answer)wrongSet.add(fmtTime(h,30));}
-  } else if(level===2){
-    hours=Math.floor(Math.random()*12)+1;minutes=[15,45][Math.floor(Math.random()*2)];
-    answer=fmtTime(hours,minutes);
-    hint=minutes===15?"🕐 Long hand at 3 means ':15' or 'quarter past'. Count from 12: 12→5min, 1→10min, 2→15min, 3→15min!":"🕐 Long hand at 9 means ':45' or 'quarter to'. Almost a full trip around!";
-    wrongSet.add(fmtTime(hours,minutes===15?45:15));
-    while(wrongSet.size<3){let h=Math.floor(Math.random()*12)+1;let m=[15,45][Math.floor(Math.random()*2)];if(fmtTime(h,m)!==answer)wrongSet.add(fmtTime(h,m));}
-  } else if(level===3){
-    hours=Math.floor(Math.random()*12)+1;minutes=[5,10,20,25,35,40,50,55][Math.floor(Math.random()*8)];
-    answer=fmtTime(hours,minutes);
-    hint=`🕐 Each number on the clock = 5 minutes. Count by 5s from 12! The long hand is at the ${Math.round(minutes/5)} position = ${minutes} minutes.`;
-    while(wrongSet.size<3){let h=Math.floor(Math.random()*12)+1;let m=[5,10,15,20,25,30,35,40,45,50,55][Math.floor(Math.random()*11)];if(fmtTime(h,m)!==answer)wrongSet.add(fmtTime(h,m));}
-  } else if(level===4){
-    hours=Math.floor(Math.random()*12)+1;minutes=Math.floor(Math.random()*60);
-    answer=fmtTime(hours,minutes);
-    hint="🕐 Find the nearest number the long hand just passed, count the small marks from there. Each small mark = 1 minute!";
-    while(wrongSet.size<3){let h=Math.floor(Math.random()*12)+1;let m=Math.floor(Math.random()*60);if(fmtTime(h,m)!==answer)wrongSet.add(fmtTime(h,m));}
+function genTimeProblem(level) {
+  let hours, minutes, answer, hint, display, wrongSet = new Set();
+
+  if (level <= 0) {
+    // LEVEL 0: O'CLOCK ONLY
+    // Foundation: learn what the two hands are and that long hand at 12 = o'clock
+    hours = Math.floor(Math.random()*12)+1;
+    minutes = 0;
+    answer = fmtTime(hours, 0);
+    display = "What time does this clock show?";
+    hint = `🕐 Look for the SHORT, thick gold hand — it's the hour hand!\n\nIt's pointing to ${hours}.\n\nNow look at the LONG white hand — it's pointing straight UP to 12.\n\nWhen the long hand points to 12, it means exactly "${hours} o'clock."\n\nSo the time is ${hours}:00!`;
+    while (wrongSet.size < 3) {
+      let h = Math.floor(Math.random()*12)+1;
+      if (h !== hours) wrongSet.add(fmtTime(h, 0));
+    }
+
+  } else if (level === 1) {
+    // LEVEL 1: HALF PAST (:30)
+    // The long hand pointing DOWN to 6 means :30
+    hours = Math.floor(Math.random()*12)+1;
+    minutes = 30;
+    answer = fmtTime(hours, 30);
+    display = "What time does this clock show?";
+    const nextHr = hours % 12 + 1;
+    hint = `🕐 The LONG white hand is pointing straight DOWN to the 6.\n\nDown to 6 ALWAYS means ":30" — it went halfway around!\n\nNow find the short gold hour hand. It's between ${hours} and ${nextHr}.\n\nWhen it's between two numbers, use the SMALLER number.\n\nSo it's ${hours}:30!`;
+    wrongSet.add(fmtTime(hours, 0));
+    wrongSet.add(fmtTime(hours % 12 + 1, 30));
+    while (wrongSet.size < 3) {
+      let h = Math.floor(Math.random()*12)+1;
+      if (fmtTime(h, 30) !== answer) wrongSet.add(fmtTime(h, 30));
+    }
+
+  } else if (level === 2) {
+    // LEVEL 2: QUARTER HOURS (:15 and :45)
+    hours = Math.floor(Math.random()*12)+1;
+    minutes = [15, 45][Math.floor(Math.random()*2)];
+    answer = fmtTime(hours, minutes);
+    display = "What time does this clock show?";
+    if (minutes === 15) {
+      hint = `🕐 The long hand is pointing to the RIGHT at the 3.\n\nThink of the clock like a pizza. The long hand went a QUARTER of the way around — that's :15!\n\n3 on the clock = 15 minutes.\n\nThe short hand just passed ${hours}, so it's ${hours}:15!`;
+    } else {
+      const nextHr = hours % 12 + 1;
+      hint = `🕐 The long hand is pointing to the LEFT at the 9.\n\nIt's gone almost all the way around — three quarters! That's :45.\n\n9 on the clock = 45 minutes.\n\nThe short hand is almost at ${nextHr} but hasn't reached it yet, so the hour is still ${hours}.\n\nIt's ${hours}:45!`;
+    }
+    wrongSet.add(fmtTime(hours, minutes === 15 ? 45 : 15));
+    while (wrongSet.size < 3) {
+      let h = Math.floor(Math.random()*12)+1;
+      let m = [15, 45][Math.floor(Math.random()*2)];
+      if (fmtTime(h, m) !== answer) wrongSet.add(fmtTime(h, m));
+    }
+
+  } else if (level === 3) {
+    // LEVEL 3: COUNT BY 5s
+    // Each number on the clock face = 5 minutes
+    hours = Math.floor(Math.random()*12)+1;
+    const fiveNums = [5,10,20,25,35,40,50,55];
+    minutes = fiveNums[Math.floor(Math.random()*fiveNums.length)];
+    answer = fmtTime(hours, minutes);
+    display = "What time does this clock show?";
+    const pointsTo = Math.round(minutes / 5);
+    // Build the count-by-5 sequence up to the answer
+    const counting = [];
+    for (let i = 1; i <= pointsTo; i++) counting.push(i * 5);
+    hint = `🕐 Secret trick: each number on the clock means 5 minutes!\n\nThe long hand is pointing to ${pointsTo}.\n\nCount by 5s from the 12 to get there:\n${counting.join(", ")} ← that's ${minutes} minutes!\n\nThe short hand says the hour is ${hours}.\n\nSo it's ${hours}:${minutes.toString().padStart(2,'0')}!`;
+    while (wrongSet.size < 3) {
+      let h = Math.floor(Math.random()*12)+1;
+      let m = fiveNums[Math.floor(Math.random()*fiveNums.length)];
+      if (fmtTime(h, m) !== answer) wrongSet.add(fmtTime(h, m));
+    }
+
+  } else if (level === 4) {
+    // LEVEL 4: EXACT MINUTES
+    // Use the little tick marks between numbers
+    hours = Math.floor(Math.random()*12)+1;
+    minutes = Math.floor(Math.random()*60);
+    answer = fmtTime(hours, minutes);
+    display = "What time does this clock show?";
+    const nearestNum = Math.floor(minutes / 5);
+    const baseMins = nearestNum * 5;
+    const extraMins = minutes - baseMins;
+    if (extraMins === 0) {
+      hint = `🕐 The long hand points right at ${nearestNum === 0 ? 12 : nearestNum}.\n\nCount by 5s: that's ${minutes} minutes.\n\nHour hand says ${hours}, so it's ${hours}:${minutes.toString().padStart(2,'0')}!`;
+    } else {
+      hint = `🕐 First find the number the long hand just PASSED: it's the ${nearestNum === 0 ? 12 : nearestNum}.\n\nThat number = ${baseMins} minutes (count by 5s to get there).\n\nNow count the tiny marks AFTER that number: ${Array.from({length:extraMins},(_,i)=>baseMins+i+1).join(", ")}.\n\nThat's ${minutes} minutes! So it's ${hours}:${minutes.toString().padStart(2,'0')}!`;
+    }
+    while (wrongSet.size < 3) {
+      let h = Math.floor(Math.random()*12)+1;
+      let m = Math.floor(Math.random()*60);
+      if (fmtTime(h, m) !== answer) wrongSet.add(fmtTime(h, m));
+    }
+
   } else {
-    hours=Math.floor(Math.random()*12)+1;minutes=[0,15,30,45][Math.floor(Math.random()*4)];
-    const addMin=[15,30,45,60][Math.floor(Math.random()*4)];
-    let newMin=minutes+addMin;let newHr=hours;
-    while(newMin>=60){newMin-=60;newHr=newHr%12+1;}
-    answer=fmtTime(newHr,newMin);
-    const display=`🕐 It's ${fmtTime(hours,minutes)} now. What time will it be in ${addMin} minutes?`;
-    hint=`🕐 Start at ${fmtTime(hours,minutes)} and count forward ${addMin} minutes!`;
-    while(wrongSet.size<3){let h=Math.floor(Math.random()*12)+1;let m=[0,15,30,45][Math.floor(Math.random()*4)];if(fmtTime(h,m)!==answer)wrongSet.add(fmtTime(h,m));}
-    return{display,answer,hint,choices:[...wrongSet,answer].sort(()=>Math.random()-.5),skill:"tellingTime",type:"elapsed",hours,minutes};
+    // LEVEL 5: ELAPSED TIME — "what time will it be in X minutes?"
+    hours = Math.floor(Math.random()*12)+1;
+    minutes = [0, 15, 30][Math.floor(Math.random()*3)];
+    const addMin = [15, 30][Math.floor(Math.random()*2)];
+    let newMin = minutes + addMin;
+    let newHr = hours;
+    while (newMin >= 60) { newMin -= 60; newHr = newHr % 12 + 1; }
+    answer = fmtTime(newHr, newMin);
+    display = `It's ${fmtTime(hours, minutes)} right now. What time will it be in ${addMin} minutes?`;
+
+    if (addMin === 30) {
+      hint = `🕐 30 minutes = the long hand moves HALFWAY around the clock (from one side to the other).\n\nStart at ${fmtTime(hours,minutes)}.\n\nMove the long hand halfway around → ${newMin === minutes ? "it comes back to the same spot but" : `it lands on ${newMin}`}.\n\n${newHr !== hours ? `The hour changes from ${hours} to ${newHr} because we passed the 12!` : `The hour is still ${newHr}.`}\n\nAnswer: ${answer}!`;
+    } else {
+      hint = `🕐 15 minutes = the long hand moves a QUARTER of the way around (like a quarter of a pizza).\n\nStart at ${fmtTime(hours,minutes)} and go forward one quarter.\n\n${newHr !== hours ? `The hour changes to ${newHr} because we passed the 12!` : `The hour stays ${newHr}.`}\n\nAnswer: ${answer}!`;
+    }
+
+    while (wrongSet.size < 3) {
+      let h = Math.floor(Math.random()*12)+1;
+      let m = [0, 15, 30, 45][Math.floor(Math.random()*4)];
+      if (fmtTime(h, m) !== answer) wrongSet.add(fmtTime(h, m));
+    }
+    return { display, answer, hint, choices: [...wrongSet, answer].sort(() => Math.random()-.5), skill: "tellingTime", type: "elapsed", hours, minutes };
   }
-  return{display:"What time does this clock show?",answer,hint,choices:[...wrongSet,answer].sort(()=>Math.random()-.5),skill:"tellingTime",type:"clock",hours,minutes};
+
+  return { display: display || "What time does this clock show?", answer, hint, choices: [...wrongSet, answer].sort(() => Math.random()-.5), skill: "tellingTime", type: "clock", hours, minutes };
 }
 
 function genBossProblem(sLevels){
@@ -169,8 +436,8 @@ function ClockFace({hours,minutes,size=220}){
       <circle cx={cx} cy={cy} r="5" fill="#ffd700"/>
       <circle cx={cx} cy={cy} r="2" fill="#151530"/>
       {/* Hand labels for beginners */}
-      <text x={cx} y={cy+r+10} textAnchor="middle" fill="rgba(237,228,212,.25)" fontSize="9" fontWeight="600" fontFamily="'Nunito',sans-serif">
-        gold = hour • white = minutes
+      <text x={cx} y={cy+r+10} textAnchor="middle" fill="rgba(237,228,212,.35)" fontSize="10" fontWeight="700" fontFamily="'Nunito',sans-serif">
+        short gold = HOUR • long white = MINUTES
       </text>
     </svg>
   );
@@ -786,7 +1053,7 @@ function Game({session}){
             </div>
 
             {!showHint&&!(feedback?.type==="correct")&&!(feedback?.type==="show")&&<div style={{textAlign:"center",marginBottom:14}}><button className="hb" onClick={()=>{setShowHint(true);playSound("sparkle");}}>💡 Need a hint?</button></div>}
-            {showHint&&<div style={{background:"rgba(167,139,250,.08)",border:"1px solid rgba(167,139,250,.15)",borderRadius:16,padding:"12px 18px",marginBottom:18,fontSize:14,lineHeight:1.55,animation:"fadeInUp .3s"}}>{problem.hint}</div>}
+            {showHint&&<div style={{background:"rgba(167,139,250,.08)",border:"1px solid rgba(167,139,250,.15)",borderRadius:16,padding:"14px 18px",marginBottom:18,fontSize:14,lineHeight:1.7,animation:"fadeInUp .3s",whiteSpace:"pre-line"}}>{problem.hint}</div>}
 
             {(!feedback||feedback.type==="wrong")&&(
               useTyped&&problem.type==="math"?(
