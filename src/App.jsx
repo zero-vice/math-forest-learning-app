@@ -43,14 +43,15 @@ const BOSS_ATK_MSGS=["The dragon breathes fire! 🔥","The dragon swipes its tai
 
 const SKILLS = {
   addition:{name:"Addition Spells",emoji:"🪄",maxLevel:8,color:"#a78bfa"},
+  doubles:{name:"Doubles Magic",emoji:"🪞",maxLevel:6,color:"#fb923c"},
   subtraction:{name:"Subtraction Charms",emoji:"🔮",maxLevel:8,color:"#f472b6"},
   multiplication:{name:"Multiply Enchantments",emoji:"🧪",maxLevel:6,color:"#fbbf24"},
   wordProblems:{name:"Story Quests",emoji:"🏰",maxLevel:6,color:"#34d399"},
   tellingTime:{name:"Telling Time",emoji:"🕐",maxLevel:6,color:"#38bdf8",locked:true},
 };
 
-const DEF_LEVELS={addition:0,subtraction:0,multiplication:0,wordProblems:0,tellingTime:0};
-const DEF_XP={addition:0,subtraction:0,multiplication:0,wordProblems:0,tellingTime:0};
+const DEF_LEVELS={addition:0,doubles:0,subtraction:0,multiplication:0,wordProblems:0,tellingTime:0};
+const DEF_XP={addition:0,doubles:0,subtraction:0,multiplication:0,wordProblems:0,tellingTime:0};
 
 // ============================================
 // PROBLEM GENERATORS
@@ -59,6 +60,15 @@ function genProblem(skill,level){
   let a,b,answer,display,hint;
   switch(skill){
     case"addition":{const R=[[1,5],[1,9],[2,12],[5,18],[5,25],[10,50],[20,80],[50,200]];const[mn,mx]=R[Math.min(level,R.length-1)];a=Math.floor(Math.random()*(mx-mn+1))+mn;b=Math.floor(Math.random()*(mx-mn+1))+mn;answer=a+b;display=`${a} + ${b} = ?`;hint=level<=1?`🧚 Start at ${a}, count up ${b}!`:level<=3?`🦉 ${a}+${Math.floor(b/2)}=${a+Math.floor(b/2)}, +${b-Math.floor(b/2)}!`:`🪄 Split: ${a}+${Math.floor(b/10)*10}=${a+Math.floor(b/10)*10}, +${b%10}=?`;break;}
+    case"doubles":{
+      if(level<=0){a=Math.floor(Math.random()*5)+1;b=a;answer=a+b;display=`${a} + ${a} = ?`;hint=`🪞 Double ${a}! Count ${a} twice: ${a}...then ${a} more!`;}
+      else if(level===1){a=Math.floor(Math.random()*10)+1;b=a;answer=a+b;display=`${a} + ${a} = ?`;hint=`🪞 Double ${a}! Think: what's ${a} two times?`;}
+      else if(level===2){a=Math.floor(Math.random()*12)+1;b=a;answer=a+b;display=`${a} + ${a} = ?`;hint=`🪞 Double ${a}! If you know ${a}×2, that's the same!`;}
+      else if(level===3){a=Math.floor(Math.random()*10)+2;b=a+1;if(Math.random()>.5)[a,b]=[b,a];answer=a+b;const sm=Math.min(a,b);display=`${a} + ${b} = ?`;hint=`🪞 Near-double! Double ${sm} = ${sm*2}, then add 1 more = ${sm*2+1}!`;}
+      else if(level===4){a=(Math.floor(Math.random()*8)+2)*5;b=a;answer=a+b;display=`${a} + ${a} = ?`;hint=`🪞 Big double! ${a}×2 = ? Think: ${Math.floor(a/10)} tens doubled = ${Math.floor(a/10)*2} tens!`;}
+      else{a=Math.floor(Math.random()*15)+5;b=a+Math.floor(Math.random()*3);if(Math.random()>.5)[a,b]=[b,a];answer=a+b;const sm=Math.min(a,b);const diff=Math.abs(a-b);display=`${a} + ${b} = ?`;hint=a===b?`🪞 Double ${a} = ${a*2}!`:`🪞 Double ${sm} = ${sm*2}, then +${diff} = ${sm*2+diff}!`;}
+      break;
+    }
     case"subtraction":{const R=[[1,5],[1,9],[3,15],[5,20],[8,30],[10,50],[20,80],[50,200]];const[mn,mx]=R[Math.min(level,R.length-1)];a=Math.floor(Math.random()*(mx-mn+1))+mn;b=Math.floor(Math.random()*Math.min(a,mx))+1;if(b>a)[a,b]=[b,a];answer=a-b;display=`${a} − ${b} = ?`;hint=level<=1?`🧚 Start at ${a}, count back ${b}!`:level<=3?`🦉 What + ${b} = ${a}?`:`🪄 ${a}−${Math.floor(b/2)}=${a-Math.floor(b/2)}, −${b-Math.floor(b/2)}!`;break;}
     case"multiplication":{const mM=[2,3,5,5,8,10][Math.min(level,5)];a=Math.floor(Math.random()*mM)+1;b=Math.floor(Math.random()*mM)+1;if(level<=1){a=Math.min(a,3);b=Math.min(b,5);}answer=a*b;display=`${a} × ${b} = ?`;hint=`🧪 ${a} groups of ${b}: ${Array.from({length:Math.min(a,5)},()=>b).join("+")}${a>5?"+...":""}=?`;break;}
     case"wordProblems":{const fc=FAIRY_CREATURES[Math.floor(Math.random()*FAIRY_CREATURES.length)];const T=[()=>{const n1=Math.floor(Math.random()*5)+2,n2=Math.floor(Math.random()*5)+1;return{display:`${fc} A fairy has ${n1} crystals and finds ${n2} more. How many now?`,answer:n1+n2,hint:`🧚 ${n1}+${n2}=?`};},()=>{const n1=Math.floor(Math.random()*6)+4,n2=Math.floor(Math.random()*(n1-1))+1;return{display:`${fc} Dragon had ${n1} coins, gave ${n2} away. How many left?`,answer:n1-n2,hint:`🐉 ${n1}−${n2}=?`};},()=>{const n1=Math.floor(Math.random()*8)+5,n2=Math.floor(Math.random()*8)+3;return{display:`${fc} Wizard picked ${n1} mushrooms, then ${n2} more. Total?`,answer:n1+n2,hint:`🍄 ${n1}+${n2}=?`};},()=>{const n1=Math.floor(Math.random()*10)+8,n2=Math.floor(Math.random()*5)+2,n3=Math.floor(Math.random()*3)+1;return{display:`${fc} Unicorn had ${n1} flowers. Gave ${n2} to bunny, ${n3} to owl. How many left?`,answer:n1-n2-n3,hint:`🦄 ${n1}−${n2}=${n1-n2}, −${n3}=?`};},()=>{const n1=Math.floor(Math.random()*4)+2,n2=Math.floor(Math.random()*5)+2;return{display:`${fc} Queen has ${n1} chests with ${n2} gems each. How many?`,answer:n1*n2,hint:`👑 ${n1}×${n2}=?`};},()=>{const n1=Math.floor(Math.random()*5)+3,n2=Math.floor(Math.random()*5)+3,n3=Math.floor(Math.random()*4)+2;return{display:`${fc} Bakery has ${n1} cupcakes, ${n2} cookies, ${n3} cakes. How many?`,answer:n1+n2+n3,hint:`🧁 ${n1}+${n2}=${n1+n2}, +${n3}=?`};}];const ti=T[Math.min(Math.floor(Math.random()*Math.min(level+2,T.length)),T.length-1)]();answer=ti.answer;display=ti.display;hint=ti.hint;break;}
@@ -115,7 +125,7 @@ function genTimeProblem(level){
 }
 
 function genBossProblem(sLevels){
-  const avail=["addition","subtraction","multiplication","wordProblems"].filter(k=>sLevels[k]>0);
+  const avail=["addition","doubles","subtraction","multiplication","wordProblems"].filter(k=>sLevels[k]>0);
   if(avail.length===0)return genProblem("addition",1);
   const sk=avail[Math.floor(Math.random()*avail.length)];
   return genProblem(sk,Math.max(0,sLevels[sk]-1));
@@ -333,7 +343,7 @@ function Game({session}){
   const saveQRef=useRef(null);
 
   // Boss available when any math skill >= level 2
-  const bossAvailable=!bossDefeats.mathDragon&&["addition","subtraction","multiplication","wordProblems"].some(k=>sLevels[k]>=2);
+  const bossAvailable=!bossDefeats.mathDragon&&["addition","doubles","subtraction","multiplication","wordProblems"].some(k=>sLevels[k]>=2);
   // Telling time unlocked
   const timeUnlocked=!!bossDefeats.mathDragon;
 
@@ -436,7 +446,7 @@ function Game({session}){
       if(cOk+1>=5)nXP[skill]=Math.min(nXP[skill]+2,xpN);
       const nS=stars+(att===0?1:0);setStars(nS);setSXP(nXP);setSLevels(nL);setPotions(nP);setSesOk(c=>c+1);
       cloudSave(nL,nXP,nS,nb,nP,name,badges,bossDefeats);
-      if(sesN+1>=10&&elapsed>=8)setTimeout(()=>setDoneScr(true),1600);
+      if(sesN+1>=8&&elapsed>=3)setTimeout(()=>setDoneScr(true),1600);
       else setTimeout(()=>nextProb(skill,nL[skill]),1500);
     }else{
       playSound("wrong");setAtt(a=>a+1);
